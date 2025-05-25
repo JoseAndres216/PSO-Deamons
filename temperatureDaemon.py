@@ -106,7 +106,8 @@ class TemperatureDaemon:
 
 
     '''
-    
+    Notifies by writing a 1 in file HighTemperatureFlag.txt if the temperature is 80°C or higher.
+    Otherwise, it writes a 0.
     '''
     def notifyIfHighTemperature(self, registeredTemperature):
         highTemperatureFlagFileRoute = os.path.join(os.path.dirname(__file__), "HighTemperatureFlag.txt")
