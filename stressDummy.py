@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import threading
 import time
 
@@ -5,7 +6,7 @@ import time
 Function to perform intensive arithmetic operations indefinitely,
 used to stress the CPU.
 '''
-def stress_cpu():
+def stressCPU():
     while True:
         x = 0
         for i in range(1000000):
@@ -15,13 +16,13 @@ def stress_cpu():
 Main function to start multiple threads running the CPU stress function.
 '''
 def main():
-    num_threads = threading.active_count()  # Current number of active threads
-    max_threads = 8  # You can adjust this to the number of CPU cores/threads
+    num_threads = threading.active_count()
+    max_threads = 8
 
     print(f"Starting {max_threads} threads to stress the CPU...")
     threads = []
     for _ in range(max_threads):
-        t = threading.Thread(target=stress_cpu)
+        t = threading.Thread(target=stressCPU)
         t.start()
         threads.append(t)
 

@@ -3,10 +3,11 @@ import os
 import sys
 import time
 import atexit
-from signal import SIGTERM
-
 import subprocess
 import re
+from signal import SIGTERM
+
+import highTemperatureNotifier
 
 TEMP_PATH = "/sys/class/thermal/thermal_zone0/temp"
 
@@ -15,18 +16,18 @@ Daemon class to periodically fetch CPU temperature and log it to a file.
 Supports start, stop, and restart operations.
 '''
 class TemperatureDaemon:
-    
+
     '''
     Initialize daemon with PID file and log file path.
     '''
-    def __init__(self, pid_file):
-        self.pid_file = pid_file
-        self.log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "TemperatureLog.txt")
+    def __init__(self, pidFile):
+        self.pidFile = pidFile
+        self.temperatureLogRoute = os.path.join(os.path.dirname(os.path.abspath(__file__)), "TemperatureLog.txt")
 
     '''
     Perform UNIX double-fork magic to daemonize the process.
     Redirect standard file descriptors to /dev/null.
-    Write the daemon PID to the pid_file.
+    Write the daemon PID to the pidFile.
     '''
     def daemonize(self):
         if os.fork():
@@ -48,22 +49,22 @@ class TemperatureDaemon:
 
         atexit.register(self.delete_pid)
         pid = str(os.getpid())
-        with open(self.pid_file, 'w') as f:
+        with open(self.pidFile, 'w') as f:
             f.write(f"{pid}\n")
 
     '''
     Remove the PID file when the daemon exits.
     '''
     def delete_pid(self):
-        if os.path.exists(self.pid_file):
-            os.remove(self.pid_file)
+        if os.path.exists(self.pidFile):
+            os.remove(self.pidFile)
 
     '''
     Start the daemon if it is not already running.
     '''
     def start(self):
         try:
-            with open(self.pid_file, 'r') as f:
+            with open(self.pidFile, 'r') as f:
                 pid = int(f.read().strip())
         except IOError:
             pid = None
@@ -80,7 +81,7 @@ class TemperatureDaemon:
     '''
     def stop(self):
         try:
-            with open(self.pid_file, 'r') as f:
+            with open(self.pidFile, 'r') as f:
                 pid = int(f.read().strip())
         except IOError:
             pid = None
@@ -103,12 +104,24 @@ class TemperatureDaemon:
         self.stop()
         self.start()
 
+
+    '''
+    
+    '''
+    def notifyIfHighTemperature(self, registeredTemperature):
+        highTemperatureFlagFileRoute = os.path.join(os.path.dirname(__file__), "HighTemperatureFlag.txt")
+        valor = "1" if registeredTemperature >= 80.0 else "0"
+        with open(highTemperatureFlagFileRoute, "w") as f:
+            f.write(valor)
+
+        return
+
     '''
     Execute 'sensors' command and parse its output to extract the temperature
     for 'Package id 0' from 'coretemp-isa-0000'.
     Returns the temperature as a float or None if unavailable.
     '''
-    def get_temperature(self):
+    def getTemperature(self):
         try:
             output = subprocess.check_output(['sensors'], text=True)
             blocks = output.split("\n\n")
@@ -118,8 +131,8 @@ class TemperatureDaemon:
                         if line.strip().startswith("Package id 0:"):
                             match = re.search(r"\+([0-9]+\.[0-9])°C", line)
                             if match:
-                                temp_str = match.group(1)
-                                return float(temp_str)
+                                tempStr = match.group(1)
+                                return float(tempStr)
             return None
         except Exception:
             return None
@@ -130,14 +143,15 @@ class TemperatureDaemon:
     '''
     def run(self):
         while True:
-            temperature = self.get_temperature()
+            temperature = self.getTemperature()
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             if temperature is not None:
-                with open(self.log_path, "a") as log:
+                self.notifyIfHighTemperature(temperature)
+                with open(self.temperatureLogRoute, "a") as log:
                     log.write(f"{timestamp} - Temperature registered: {temperature:.1f}°C\n")
             else:
-                with open(self.log_path, "a") as log:
-                    log.write(f"{timestamp} - Temperature registered: not available\n")
+                with open(self.temperatureLogRoute, "a") as log:
+                    log.write(f"{timestamp} - Temperature registered: Not available\n")
             time.sleep(5)
 
 if __name__ == "__main__":
