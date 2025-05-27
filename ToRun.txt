@@ -1,0 +1,39 @@
+Compile temperaturedaemon:
+
+chmod +x temperatureDaemon.py
+
+Compile highTemperatureNotifier:
+
+chmod +x highTemperatureNotifier.py
+
+Compile stressDummy:
+
+chmod +x stressDummy.py
+
+Start temperatureDaemon:
+
+sudo ./temperatureDaemon.py start
+
+Start highTemperatureNotifier:
+
+nohup python3 highTemperatureNotifier.py &
+
+Start stressDummy:
+
+./stressDummy.py
+
+Restart temperatureDaemon:
+
+sudo ./temperatureDaemon.py restart
+
+Stop stressDummy:
+
+Ctrl + C
+
+Stop stressDummy:
+
+Ctrl + C
+
+Stop temperatureDaemon:
+
+sudo ./temperatureDaemon.py stop
